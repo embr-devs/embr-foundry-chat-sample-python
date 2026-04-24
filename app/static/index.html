@@ -32,14 +32,45 @@
         align-items: center;
       }
       header h1 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: 0.2px; }
-      header .badge {
+      .conn {
+        display: flex;
+        align-items: center;
+        gap: 10px;
         font-size: 12px;
         color: var(--muted);
         background: var(--panel);
         border: 1px solid var(--border);
-        padding: 4px 10px;
+        padding: 6px 12px;
         border-radius: 999px;
       }
+      .conn .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #6b7290;
+        box-shadow: 0 0 0 0 rgba(0,0,0,0);
+      }
+      .conn.ok .dot { background: #3ddc97; box-shadow: 0 0 8px rgba(61,220,151,0.5); }
+      .conn.err .dot { background: #ff6b6b; }
+      .conn .sep { opacity: 0.4; }
+      .conn .label { color: var(--muted); }
+      .conn .value { color: var(--text); font-weight: 500; }
+      .header-right { display: flex; align-items: center; gap: 10px; }
+      button.ghost {
+        background: var(--panel);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      button.ghost:hover { border-color: var(--accent); color: var(--accent); }
+      button.ghost svg { width: 14px; height: 14px; }
       main {
         flex: 1;
         display: flex;
@@ -59,18 +90,64 @@
         gap: 12px;
         padding-right: 4px;
       }
+      .row {
+        display: flex;
+        gap: 10px;
+        max-width: 85%;
+        align-items: flex-start;
+      }
+      .row.user { align-self: flex-end; flex-direction: row-reverse; }
+      .row.assistant { align-self: flex-start; }
+      .avatar {
+        width: 32px;
+        height: 32px;
+        flex: 0 0 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--border);
+        background: var(--panel);
+        color: var(--text);
+      }
+      .avatar svg { width: 18px; height: 18px; }
+      .row.user .avatar { background: var(--user); }
+      .row.assistant .avatar { background: linear-gradient(135deg, #4a63c8, #7aa2ff); color: #0b1020; border-color: transparent; }
       .msg {
         padding: 12px 16px;
         border-radius: 14px;
-        max-width: 80%;
-        line-height: 1.45;
-        white-space: pre-wrap;
+        line-height: 1.5;
         word-wrap: break-word;
         border: 1px solid var(--border);
+        flex: 1;
+        min-width: 0;
       }
-      .msg.user { align-self: flex-end; background: var(--user); }
-      .msg.assistant { align-self: flex-start; background: var(--assistant); }
-      .msg.system { align-self: center; background: transparent; color: var(--muted); font-size: 12px; }
+      .msg.user { background: var(--user); white-space: pre-wrap; }
+      .msg.assistant { background: var(--assistant); }
+      .msg.system { align-self: center; background: transparent; color: var(--muted); font-size: 12px; border: 0; }
+      .msg.assistant p { margin: 0 0 8px 0; }
+      .msg.assistant p:last-child { margin-bottom: 0; }
+      .msg.assistant ul, .msg.assistant ol { margin: 4px 0 8px 0; padding-left: 22px; }
+      .msg.assistant li { margin: 2px 0; }
+      .msg.assistant code {
+        background: rgba(0,0,0,0.35);
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-size: 13px;
+      }
+      .msg.assistant pre {
+        background: rgba(0,0,0,0.35);
+        padding: 10px 12px;
+        border-radius: 8px;
+        overflow-x: auto;
+        margin: 6px 0;
+      }
+      .msg.assistant pre code { background: transparent; padding: 0; }
+      .msg.assistant h1, .msg.assistant h2, .msg.assistant h3 {
+        margin: 10px 0 6px 0;
+        font-size: 15px;
+      }
+      .msg.assistant a { color: var(--accent); }
       form {
         display: flex;
         gap: 10px;
@@ -102,46 +179,105 @@
   <body>
     <header>
       <h1>Embr × Foundry chat</h1>
-      <span class="badge" id="badge">loading…</span>
-    </header>
-    <main>
-      <div id="log">
-        <div class="msg system">
-          Agent orchestrated locally with Microsoft Agent Framework. LLM served by a Foundry-deployed model.
+      <div class="header-right">
+        <button id="new-chat" class="ghost" type="button" title="Start a new chat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+          New chat
+        </button>
+        <div class="conn" id="conn" title="Foundry connection">
+          <span class="dot"></span>
+          <span id="conn-text">checking…</span>
         </div>
       </div>
+    </header>
+    <main>
+      <div id="log"></div>
       <form id="form" autocomplete="off">
-        <input id="input" type="text" placeholder="Ask me about the weather in Seattle, or to roll a d20…" />
+        <input id="input" type="text" placeholder="Ask me anything…" />
         <button id="send" type="submit">Send</button>
       </form>
     </main>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
     <script>
       const log = document.getElementById("log");
       const form = document.getElementById("form");
       const input = document.getElementById("input");
       const send = document.getElementById("send");
-      const badge = document.getElementById("badge");
+
+      const conn = document.getElementById("conn");
+      const connText = document.getElementById("conn-text");
+      const newChatBtn = document.getElementById("new-chat");
+
+      newChatBtn.addEventListener("click", async () => {
+        log.innerHTML = "";
+        input.focus();
+        try {
+          await fetch("/api/reset", { method: "POST" });
+        } catch (e) {
+          // non-fatal
+        }
+      });
+
+      marked.setOptions({ gfm: true, breaks: true });
+
+      function renderMarkdown(text) {
+        return DOMPurify.sanitize(marked.parse(text || ""));
+      }
 
       async function loadConfig() {
         try {
           const r = await fetch("/api/config");
           const c = await r.json();
-          badge.textContent = c.endpoint_configured
-            ? `model: ${c.model}`
-            : "⚠ no Foundry endpoint configured";
+          if (!c.endpoint_configured) {
+            conn.classList.add("err");
+            connText.textContent = "⚠ Foundry not configured";
+            return;
+          }
+          conn.classList.add("ok");
+          const parts = [];
+          if (c.host) parts.push(`<span class="label">host</span> <span class="value">${c.host}</span>`);
+          if (c.project) parts.push(`<span class="label">project</span> <span class="value">${c.project}</span>`);
+          if (c.model) parts.push(`<span class="label">model</span> <span class="value">${c.model}</span>`);
+          connText.innerHTML = parts.join(' <span class="sep">·</span> ');
         } catch (e) {
-          badge.textContent = "⚠ config error";
+          conn.classList.add("err");
+          connText.textContent = "⚠ config error";
         }
       }
       loadConfig();
 
+      const AVATARS = {
+        user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+        assistant: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.9 4.6L18.5 8.5l-4.6 1.9L12 15l-1.9-4.6L5.5 8.5l4.6-1.9L12 2z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8L19 15z"/></svg>',
+      };
+
       function append(role, text) {
-        const el = document.createElement("div");
-        el.className = `msg ${role}`;
-        el.textContent = text;
-        log.appendChild(el);
+        const row = document.createElement("div");
+        row.className = `row ${role}`;
+
+        const avatar = document.createElement("div");
+        avatar.className = "avatar";
+        avatar.innerHTML = AVATARS[role] || "";
+
+        const bubble = document.createElement("div");
+        bubble.className = `msg ${role}`;
+        if (role === "assistant") {
+          bubble.innerHTML = renderMarkdown(text);
+        } else {
+          bubble.textContent = text;
+        }
+
+        row.appendChild(avatar);
+        row.appendChild(bubble);
+        log.appendChild(row);
         log.scrollTop = log.scrollHeight;
-        return el;
+        return bubble;
+      }
+
+      function setAssistant(el, text) {
+        el.innerHTML = renderMarkdown(text);
+        log.scrollTop = log.scrollHeight;
       }
 
       form.addEventListener("submit", async (e) => {
@@ -160,7 +296,7 @@
           });
           if (!r.ok) throw new Error(await r.text());
           const data = await r.json();
-          pending.textContent = data.reply;
+          setAssistant(pending, data.reply);
         } catch (err) {
           pending.textContent = `Error: ${err.message || err}`;
         } finally {

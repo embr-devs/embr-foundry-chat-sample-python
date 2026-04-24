@@ -70,9 +70,36 @@ async def chat(req: ChatRequest) -> ChatResponse:
     return ChatResponse(reply=reply)
 
 
+@app.post("/api/reset")
+async def reset(thread_id: str | None = None) -> dict[str, str]:
+    tid = thread_id or "default"
+    _threads.pop(tid, None)
+    return {"status": "ok", "thread_id": tid}
+
+
 @app.get("/api/config")
 async def config() -> dict[str, object]:
+    base_url = os.environ.get("FOUNDRY_BASE_URL", "")
+    host = ""
+    project = ""
+    if base_url:
+        try:
+            from urllib.parse import urlparse
+
+            parsed = urlparse(base_url)
+            host = parsed.netloc
+            # Pull project slug if URL looks like /api/projects/<project>/...
+            parts = [p for p in parsed.path.split("/") if p]
+            if "projects" in parts:
+                idx = parts.index("projects")
+                if idx + 1 < len(parts):
+                    project = parts[idx + 1]
+        except Exception:  # noqa: BLE001
+            pass
     return {
         "model": os.environ.get("FOUNDRY_MODEL_DEPLOYMENT", "gpt-4o-mini"),
-        "endpoint_configured": bool(os.environ.get("FOUNDRY_BASE_URL")),
+        "endpoint_configured": bool(base_url) and bool(os.environ.get("FOUNDRY_API_KEY")),
+        "base_url": base_url,
+        "host": host,
+        "project": project,
     }
