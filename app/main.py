@@ -73,6 +73,6 @@ async def chat(req: ChatRequest) -> ChatResponse:
 @app.get("/api/config")
 async def config() -> dict[str, object]:
     return {
-        "model": os.environ.get("AZURE_OPENAI_MODEL", "gpt-4o-mini"),
-        "endpoint_configured": bool(os.environ.get("AZURE_OPENAI_ENDPOINT")),
+        "model": os.environ.get("FOUNDRY_MODEL_DEPLOYMENT", "gpt-4o-mini"),
+        "endpoint_configured": bool(os.environ.get("FOUNDRY_BASE_URL")),
     }

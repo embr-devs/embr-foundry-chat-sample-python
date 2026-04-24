@@ -5,16 +5,16 @@ A tiny chat app that demonstrates **Scenario 1** of the [Embr × Foundry POC](ht
 > An agent is orchestrated *inside* an Embr-hosted Python app using **Microsoft Agent Framework**. The Foundry project only provides the underlying LLM (the model deployment) — the agent loop, system prompt, tool-calling, and memory all live in this repo's own code.
 
 ```
-┌───────────────────────────────────────────────┐
-│              Embr-hosted container            │
-│                                               │
+┌──────────────────────────────────────────────┐
+│              Embr-hosted container           │
+│                                              │
 │   ┌─────────────┐     ┌──────────────────┐   │
 │   │   FastAPI   │────▶│  Microsoft       │   │
 │   │   + HTML UI │     │  Agent Framework │   │
 │   └─────────────┘     │  (agent loop +   │   │
 │                       │   local tools)   │   │
 │                       └────────┬─────────┘   │
-└────────────────────────────────┼──────────────┘
+└────────────────────────────────┼─────────────┘
                                  │ inference only
                                  ▼
                       ┌──────────────────────┐
@@ -49,15 +49,15 @@ You do this **once**, in the Azure AI Foundry portal. The app just needs a model
 
 ### 3. Grab the three values you need
 
-On the deployment's detail page, click **View code** (or the endpoint tile on the project home). You need:
+On the deployment's **View code** tab, pick `API: Completions API` → `Language: Python` → `SDK: OpenAI SDK`. You'll see the exact values used below.
 
 | Env var | Where to find it | Example |
 |---|---|---|
-| `AZURE_OPENAI_ENDPOINT` | The **Target URI** *base* — just the `https://<resource>.openai.azure.com/` portion, not the full completions URL | `https://my-foundry.openai.azure.com/` |
-| `AZURE_OPENAI_API_KEY` | **Key 1** on the deployment page | `abc123…` |
-| `AZURE_OPENAI_MODEL` | The **Deployment name** you chose above (this is the deployment name, NOT the underlying model name) | `gpt-4o-mini` |
+| `FOUNDRY_BASE_URL` | The `endpoint` value in the "View code" snippet (resource-level OpenAI-compatible endpoint) | `https://jordan-embr.openai.azure.com/openai/v1` |
+| `FOUNDRY_API_KEY` | **Keys + Endpoint** on the Foundry resource (click the key icon to reveal) | `abc123…` |
+| `FOUNDRY_MODEL_DEPLOYMENT` | The `deployment_name` value in the snippet — this is the deployment name, NOT the model family | `gpt-5.4-mini-1` |
 
-Optional: `AZURE_OPENAI_API_VERSION` (defaults to `2024-10-21`).
+> **Why the OpenAI-compat endpoint instead of the project one?** Foundry projects also expose a project-scoped URL under `services.ai.azure.com/api/projects/<name>/openai/v1/...`. Either works with `OpenAIChatClient(base_url=..., api_key=...)`, but the resource-level `openai.azure.com/openai/v1` endpoint is simpler to grab from the portal. For production you'd swap the API key for managed identity.
 
 ---
 
@@ -102,9 +102,9 @@ embr quickstart deploy <your-user>/embr-foundry-chat-sample -i <installation-id>
 ### Configure the Foundry values
 
 ```bash
-embr variables set AZURE_OPENAI_ENDPOINT https://<your-foundry>.openai.azure.com/
-embr variables set AZURE_OPENAI_API_KEY <your-key> --secret
-embr variables set AZURE_OPENAI_MODEL <your-deployment-name>
+embr variables set FOUNDRY_BASE_URL https://<resource>.openai.azure.com/openai/v1
+embr variables set FOUNDRY_API_KEY <your-key> --secret
+embr variables set FOUNDRY_MODEL_DEPLOYMENT <deployment-name>
 ```
 
 Trigger a redeploy so the new env vars take effect:

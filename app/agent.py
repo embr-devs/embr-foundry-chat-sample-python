@@ -22,8 +22,8 @@ Embr-hosted Python app. Your language model is served by a deployment in an
 Azure AI Foundry project, but you (the agent) are orchestrated by Microsoft
 Agent Framework inside the app's own process — so you can call local tools.
 
-When asked about the weather or the current time in a city, use the provided
-tools. Keep answers short and conversational.
+When asked about the weather or asked to roll a die, use the provided tools.
+Keep answers short and conversational.
 """.strip()
 
 
@@ -44,22 +44,24 @@ def roll_dice(
 
 
 def _build_client() -> OpenAIChatClient:
-    endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT")
-    api_key = os.environ.get("AZURE_OPENAI_API_KEY")
-    model = os.environ.get("AZURE_OPENAI_MODEL", "gpt-4o-mini")
-    api_version = os.environ.get("AZURE_OPENAI_API_VERSION", "2024-10-21")
+    # Foundry exposes an OpenAI-compatible endpoint at
+    # https://<resource>.openai.azure.com/openai/v1 — use it via base_url so we
+    # can use a plain API key (no managed identity dance for the POC).
+    base_url = os.environ.get("FOUNDRY_BASE_URL")
+    api_key = os.environ.get("FOUNDRY_API_KEY")
+    model = os.environ.get("FOUNDRY_MODEL_DEPLOYMENT")
 
-    if not endpoint or not api_key:
+    if not base_url or not api_key or not model:
         raise RuntimeError(
-            "Missing Foundry model configuration. Set AZURE_OPENAI_ENDPOINT and "
-            "AZURE_OPENAI_API_KEY (see README → Foundry portal setup)."
+            "Missing Foundry configuration. Set FOUNDRY_BASE_URL "
+            "(e.g. https://<resource>.openai.azure.com/openai/v1), FOUNDRY_API_KEY, "
+            "and FOUNDRY_MODEL_DEPLOYMENT. See README → Foundry portal setup."
         )
 
     return OpenAIChatClient(
-        azure_endpoint=endpoint,
+        base_url=base_url,
         api_key=api_key,
         model=model,
-        api_version=api_version,
     )
 
 
