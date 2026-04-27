@@ -1,4 +1,4 @@
-# embr-foundry-chat-sample
+# embr-foundry-chat-sample-python
 
 A tiny chat app that demonstrates **Scenario 1** of the [Embr × Foundry POC](https://github.com/coreai-microsoft/embr/issues/300):
 
@@ -97,10 +97,10 @@ The [Embr GitHub App](https://github.com/apps/embr-platform) must be installed o
 
 ```bash
 # Push this repo to GitHub first (under your account)
-gh repo create embr-foundry-chat-sample --source=. --public --push
+gh repo create embr-foundry-chat-sample-python --source=. --public --push
 
 # One-command deploy
-embr quickstart deploy <your-user>/embr-foundry-chat-sample -i <installation-id>
+embr quickstart deploy <your-user>/embr-foundry-chat-sample-python -i <installation-id>
 ```
 
 `embr installations config` returns the installation ID if you don't know it.
